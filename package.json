@@ -1,0 +1,25 @@
+{
+  "name": "swagger-client-autogen",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Swagger API client generator for ky + TanStack Query with FSD pattern",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "fetch-swagger": "./scripts/fetch-swagger.js",
+    "generate-all": "./scripts/generate-all.js"
+  },
+  "devDependencies": {
+    "js-yaml": "^4.1.0",
+    "minimist": "^1.2.8",
+    "node-fetch": "^3.3.2",
+    "swagger-typescript-api": "^13.0.22"
+  },
+  "packageManager": "yarn@4.7.0"
+}
