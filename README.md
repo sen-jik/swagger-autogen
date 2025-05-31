@@ -200,6 +200,6 @@ generate-all --uri ./swagger/my-api.yml --project-template ./my-templates/
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## �� 라이선스
+## 📄 라이선스
 
-ISC License
+이 프로젝트는 [MIT License](LICENSE) 하에 배포됩니다.

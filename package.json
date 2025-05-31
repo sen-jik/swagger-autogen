@@ -7,7 +7,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "description": "Swagger API client generator for ky + TanStack Query with FSD pattern",
   "private": true,
   "type": "module",
