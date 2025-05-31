@@ -1,15 +1,27 @@
 <%
-const { utils, route, modelTypes } = it;
-const { _, pascalCase } = utils;
-const routes = route.routes;
+/**
+ * DTO Import 템플릿
+ * - 생성된 DTO 타입들을 import하는 구문 생성
+ * - 상대 경로를 사용하여 dto.ts 파일에서 타입 가져오기
+ * - API 클래스와 TanStack Query 훅에서 사용
+ */
 
+const { modelTypes, utils } = it;
+const { _ } = utils;
+
+// 사용 가능한 모든 DTO 타입명 추출
 const dataContracts = _.map(modelTypes, "name");
-const queryParamsDto = routes.filter(v=>v.specificArgs.query).map(v=>`${pascalCase(v.routeName.original)}QueryParams`)
-const headerDto = routes.filter(v=>v.specificArgs.headers).map(v=>`${pascalCase(v.routeName.original)}Headers`)
-
-const dtoArray = [...queryParamsDto, ...dataContracts, ...headerDto]
 %>
 
-<% if (dtoArray.length) { %>
-import { <%~ dtoArray.join(", ") %> } from "@/shared/api"
+<% if (dataContracts?.length) { %>
+/**
+ * 생성된 DTO 타입들을 import
+ * - 모든 API에서 사용되는 공통 타입 정의
+ * - 요청/응답 데이터의 타입 안전성 보장
+ */
+import type {
+<% for (const dataContract of dataContracts) { %>
+  <%= dataContract %>,
+<% } %>
+} from '../../../shared/api/dto';
 <% } %>

@@ -1,7 +1,20 @@
 <%
+/**
+ * DTO(Data Transfer Object) 타입 정의 템플릿
+ * - Swagger 스키마에서 TypeScript 타입 정의 생성
+ * - enum, interface, type 등 다양한 타입 지원
+ * - 제네릭 타입 지원
+ * - Query 파라미터 및 Header 타입 자동 생성
+ */
+
 const { modelTypes, utils, config, routes } = it;
 const { formatDescription, require, _, Ts, pascalCase } = utils;
 
+/**
+ * 제네릭 타입 문자열 생성
+ * @param {Object} contract - 타입 계약 객체
+ * @returns {string} 제네릭 타입 문자열 (예: <T extends string = any>)
+ */
 const buildGenerics = (contract) => {
     if (!contract.genericArgs || !contract.genericArgs.length) return '';
 
@@ -14,13 +27,22 @@ const buildGenerics = (contract) => {
     }).join(',') + '>'
 }
 
+/**
+ * 데이터 계약 템플릿 정의
+ * - enum: 열거형 타입 생성
+ * - interface: 인터페이스 타입 생성 (실제로는 type alias 사용)
+ * - type: 타입 별칭 생성
+ */
 const dataContractTemplates = {
+    // 열거형 타입 템플릿
     enum: (contract) => {
         return `enum ${contract.name} {\r\n${contract.content} \r\n }`;
     },
+    // 인터페이스 타입 템플릿 (객체 형태)
     interface: (contract) => {
         return `type ${contract.name}${buildGenerics(contract)} = {\r\n${contract.content}}`;
     },
+    // 일반 타입 별칭 템플릿
     type: (contract) => {
         return `type ${contract.name}${buildGenerics(contract)} = ${contract.content}`;
     },
@@ -28,6 +50,11 @@ const dataContractTemplates = {
 %>
 
 <% if (config.internalTemplateOptions.addUtilRequiredKeysType) { %>
+/**
+ * 유틸리티 타입: 특정 키를 필수로 만드는 헬퍼 타입
+ * @template T - 원본 타입
+ * @template K - 필수로 만들 키들
+ */
 type <%~ config.Ts.CodeGenKeyword.UtilRequiredKeys %><T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
 <% } %>
 
@@ -38,18 +65,28 @@ type <%~ config.Ts.CodeGenKeyword.UtilRequiredKeys %><T, K extends keyof T> = Om
 
 <% } %>
 
+<%
+/**
+ * API 엔드포인트별 Query 파라미터 및 Header 타입 생성
+ * - 각 API 엔드포인트의 쿼리 파라미터를 별도 타입으로 정의
+ * - 각 API 엔드포인트의 헤더를 별도 타입으로 정의
+ * - TanStack Query와 API 클래스에서 사용
+ */
+%>
 <% for (const route of routes.combined) { %>
     <% for (const api of route.routes) { %>
 
         <% const queryName = `${pascalCase(api.routeName.usage)}QueryParams`; %>
         <% const queryContent = api.specificArgs.query?.type; %>
         <% if (queryContent) { %>
+            /** <%= api.routeName.usage %> API의 쿼리 파라미터 타입 */
             export type <%= queryName %> = <%= queryContent %>;
         <% } %>
 
         <% const headerName = `${pascalCase(api.routeName.usage)}Headers`; %>
         <% const headerContent = api.specificArgs.headers?.type; %>
         <% if (headerContent) { %>
+            /** <%= api.routeName.usage %> API의 헤더 타입 */
             export type <%~ headerName %> = <%~ headerContent %>;
         <% } %>
 
