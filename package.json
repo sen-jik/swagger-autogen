@@ -4,8 +4,7 @@
   "main": "index.js",
   "description": "Swagger API client generator that creates type-safe API clients using ky and TanStack Query with Feature Sliced Design pattern. Automatically generates API client code from Swagger/OpenAPI specifications.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "yarn run build"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "swagger",
@@ -33,10 +32,10 @@
   "packageManager": "yarn@4.7.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sen2y/swagger-client-autogen.git"
+    "url": "git+https://github.com/sen-jik/swagger-autogen.git"
   },
-  "homepage": "https://github.com/sen2y/swagger-client-autogen#readme",
+  "homepage": "https://github.com/sen-jik/swagger-autogen#readme",
   "bugs": {
-    "url": "https://github.com/sen2y/swagger-client-autogen/issues"
+    "url": "https://github.com/sen-jik/swagger-autogen/issues"
   }
 }

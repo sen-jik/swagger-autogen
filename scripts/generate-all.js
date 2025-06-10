@@ -167,17 +167,8 @@ export const generateApiCode = async ({
     generateUnionEnums: true,
     cleanOutput: false,
     silent: true,
-    // Prettier 설정
-    prettier: {
-      semi: true,
-      trailingComma: "es5",
-      singleQuote: true,
-      printWidth: 100,
-      tabWidth: 2,
-      arrowParens: "always",
-      jsxBracketSameLine: false,
-      jsxSingleQuote: false,
-    },
+    // 프로젝트의 Prettier 설정을 사용
+    prettier: true,
     modular: true,
     moduleNameFirstTag: true, // Swagger 태그를 모듈명으로 사용
     moduleNameIndex: 1,
