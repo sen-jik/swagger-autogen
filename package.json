@@ -9,13 +9,12 @@
   "author": "",
   "license": "MIT",
   "description": "Swagger API client generator for ky + TanStack Query with FSD pattern",
-  "private": true,
   "type": "module",
   "bin": {
     "fetch-swagger": "./scripts/fetch-swagger.js",
     "generate-all": "./scripts/generate-all.js"
   },
-  "devDependencies": {
+  "dependencies": {
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
     "node-fetch": "^3.3.2",
