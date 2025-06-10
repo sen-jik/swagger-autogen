@@ -1,6 +1,6 @@
-# Swagger Client Autogen
+# swagger-fsd-gen
 
-**ky + TanStack Query + FSD 패턴**을 위한 Swagger API 클라이언트 자동 생성 도구입니다.
+Swagger/OpenAPI 문서를 기반으로 **ky + TanStack Query + FSD(Feature-Sliced Design) 패턴**에 맞는 API 클라이언트를 자동으로 생성하는 도구입니다.
 
 ## ✨ 주요 기능
 
@@ -9,70 +9,62 @@
 - 📁 **FSD(Feature-Sliced Design)** 패턴 자동 적용
 - 🔐 **HTTP Basic Authentication** 지원
 - 📝 **TypeScript** 완전 지원 (타입 안전성)
-- 🎨 **Prettier** 자동 포맷팅
+- 🎨 **프로젝트의 Prettier 설정** 자동 적용
 
-## 📦 설치 방법
-
-### 1. 저장소 클론
+## 📦 설치
 
 ```bash
-git clone <repository-url>
-cd swagger-client-autogen
-```
+# npm
+npm install -D swagger-fsd-gen
 
-### 2. 의존성 설치
-
-```bash
-yarn install
-```
-
-### 3. 전역 설치 (선택사항)
-
-```bash
-yarn link
+# yarn
+yarn add -D swagger-fsd-gen
 ```
 
 ## 🚀 사용 방법
 
-### 1. Swagger 문서 다운로드
+### 1. 직접 실행
 
 ```bash
-# 기본 사용법
-fetch-swagger --url https://api.example.com/swagger.json
+# npm
+npx fetch-swagger --url https://api.example.com/swagger.json --username your-username --password your-password
+npx generate-all --uri https://api.example.com/swagger.json --username your-username --password your-password
 
-# 인증이 필요한 경우
-fetch-swagger --url https://api.example.com/swagger.json --username admin --password secret
+# yarn
+yarn fetch-swagger --url https://api.example.com/swagger.json --username your-username --password your-password
+yarn generate-all --uri https://api.example.com/swagger.json --username your-username --password your-password
 ```
 
-**결과**: `swagger/` 디렉토리에 YAML 파일로 저장됩니다.
+### 2. package.json에 스크립트 추가 (권장)
 
-### 2. API 클라이언트 생성
+```json
+{
+  "scripts": {
+    "fetch-swagger": "fetch-swagger --url https://api.example.com/swagger.json --username your-username --password your-password",
+    "generate-all": "generate-all --uri https://api.example.com/swagger.json --username your-username --password your-password"
+  }
+}
+```
+
+그리고 실행:
 
 ```bash
-# 원격 Swagger 문서에서 생성
-generate-all --uri https://api.example.com/swagger.json
+# npm
+npm run fetch-swagger
+npm run generate-all
 
-# 로컬 파일에서 생성
-generate-all --uri ./swagger/my-api.yml
-
-# 인증이 필요한 경우
-generate-all --uri https://api.example.com/swagger.json --username admin --password secret
-
-# 커스텀 출력 경로 지정
-generate-all --uri ./swagger/my-api.yml \
-  --dto-output-path ./src/shared/api/dto.ts \
-  --api-output-path ./src/entities/{moduleName}/api/index.ts \
-  --query-output-path ./src/entities/{moduleName}/api/queries.ts \
-  --mutation-output-path ./src/entities/{moduleName}/api/mutations.ts
+# yarn
+yarn fetch-swagger
+yarn generate-all
 ```
 
-## 📁 생성되는 파일 구조 (FSD 패턴)
+## 📁 생성되는 파일 구조
 
 ```
 src/
 ├── shared/
 │   └── api/
-│       └── dto.ts              # 모든 DTO 타입 정의
+│       └── dto.ts              # DTO 타입 정의
 └── entities/
     └── {moduleName}/           # Swagger 태그별 모듈
         └── api/
@@ -82,124 +74,28 @@ src/
             └── mutations.ts    # TanStack Mutation 훅
 ```
 
-## 💡 생성된 코드 사용 예시
+## ⚙️ 옵션
 
-### 1. API 인스턴스 설정
+### fetch-swagger
 
-```typescript
-// src/app/providers/api.ts
-import ky from "ky";
+| 옵션       | 설명                | 필수 |
+| ---------- | ------------------- | ---- |
+| --url      | Swagger 문서 URL    | ✅   |
+| --username | Basic Auth 사용자명 | -    |
+| --password | Basic Auth 비밀번호 | -    |
 
-export const apiInstance = ky.create({
-  prefixUrl: "https://api.example.com",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-```
+### generate-all
 
-### 2. API 클래스 사용
-
-```typescript
-// src/entities/user/api/instance.ts (자동 생성됨)
-import { UserApi } from "./index";
-import { apiInstance } from "@/app/providers/api";
-
-export const userApi = new UserApi(apiInstance);
-```
-
-### 3. TanStack Query 훅 사용
-
-```typescript
-// src/pages/user/ui/UserProfile.tsx
-import { useGetUserByIdQuery } from "@/entities/user/api/queries";
-import { useUpdateUserMutation } from "@/entities/user/api/mutations";
-
-export const UserProfile = ({ userId }: { userId: number }) => {
-  // Query 사용
-  const { data: user, isLoading } = useGetUserByIdQuery(userId);
-
-  // Mutation 사용
-  const updateUserMutation = useUpdateUserMutation({
-    onSuccess: () => {
-      console.log("User updated successfully!");
-    },
-  });
-
-  const handleUpdate = (userData: UpdateUserRequestDto) => {
-    updateUserMutation.mutate({
-      id: userId,
-      body: userData,
-    });
-  };
-
-  if (isLoading) return <div>Loading...</div>;
-
-  return (
-    <div>
-      <h1>{user?.name}</h1>
-      <button onClick={() => handleUpdate({ name: "New Name" })}>
-        Update User
-      </button>
-    </div>
-  );
-};
-```
-
-## ⚙️ 설정 옵션
-
-### 명령행 옵션
-
-| 옵션                     | 단축키 | 설명                            | 기본값                                       |
-| ------------------------ | ------ | ------------------------------- | -------------------------------------------- |
-| `--uri`                  | `-u`   | Swagger 문서 URL 또는 파일 경로 | 필수                                         |
-| `--username`             | `-un`  | HTTP Basic Auth 사용자명        | -                                            |
-| `--password`             | `-pw`  | HTTP Basic Auth 비밀번호        | -                                            |
-| `--dto-output-path`      | `-dp`  | DTO 파일 출력 경로              | `src/shared/api/dto.ts`                      |
-| `--api-output-path`      | `-ap`  | API 클래스 출력 경로            | `src/entities/{moduleName}/api/index.ts`     |
-| `--query-output-path`    | `-qp`  | Query 훅 출력 경로              | `src/entities/{moduleName}/api/queries.ts`   |
-| `--mutation-output-path` | `-mp`  | Mutation 훅 출력 경로           | `src/entities/{moduleName}/api/mutations.ts` |
-| `--project-template`     | `-pt`  | 커스텀 템플릿 경로              | -                                            |
-
-### 경로에서 `{moduleName}` 사용
-
-`{moduleName}`을 포함한 경로는 Swagger 태그명으로 자동 대체됩니다.
-
-예: `User` 태그 → `user` 모듈명으로 변환
-
-## 🔧 커스텀 템플릿
-
-기본 템플릿을 복사하여 프로젝트에 맞게 수정할 수 있습니다:
-
-```bash
-# 템플릿 복사
-cp -r templates/ ./my-templates/
-
-# 커스텀 템플릿 사용
-generate-all --uri ./swagger/my-api.yml --project-template ./my-templates/
-```
-
-## 🛠️ 개발 환경
-
-- **Node.js**: 18+
-- **Package Manager**: Yarn 4.7.0
-- **Type**: ES Module
-
-## 📋 의존성
-
-- `swagger-typescript-api`: Swagger 문서 파싱 및 코드 생성
-- `minimist`: 명령행 인수 파싱
-- `js-yaml`: YAML 파일 처리
-- `node-fetch`: HTTP 요청
-
-## 🤝 기여하기
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+| 옵션                   | 설명                  | 기본값                                     |
+| ---------------------- | --------------------- | ------------------------------------------ |
+| --uri                  | Swagger 문서 URL/경로 | 필수                                       |
+| --username             | Basic Auth 사용자명   | -                                          |
+| --password             | Basic Auth 비밀번호   | -                                          |
+| --dto-output-path      | DTO 파일 경로         | src/shared/api/dto.ts                      |
+| --api-output-path      | API 클래스 경로       | src/entities/{moduleName}/api/index.ts     |
+| --query-output-path    | Query 훅 경로         | src/entities/{moduleName}/api/queries.ts   |
+| --mutation-output-path | Mutation 훅 경로      | src/entities/{moduleName}/api/mutations.ts |
 
 ## 📄 라이선스
 
-이 프로젝트는 [MIT License](LICENSE) 하에 배포됩니다.
+MIT © [sen2y](https://github.com/sen-jik)
