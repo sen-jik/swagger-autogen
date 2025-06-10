@@ -181,7 +181,7 @@ export const generateApiCode = async ({
     modular: true,
     moduleNameFirstTag: true, // Swagger 태그를 모듈명으로 사용
     moduleNameIndex: 1,
-    typeSuffix: "Dto", // 타입에 Dto 접미사 추가
+    // typeSuffix: "Dto", // 타입에 Dto 접미사 추가
     generateRouteTypes: true,
     schemaParsers: {
       complexAnyOf: AnyOfSchemaParser,
