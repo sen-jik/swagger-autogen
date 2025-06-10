@@ -1,14 +1,24 @@
 {
-  "name": "swagger-client-autogen",
+  "name": "swagger-fsd-gen",
   "version": "1.0.0",
   "main": "index.js",
+  "description": "Swagger API client generator that creates type-safe API clients using ky and TanStack Query with Feature Sliced Design pattern. Automatically generates API client code from Swagger/OpenAPI specifications.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "yarn run build"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "swagger",
+    "openapi",
+    "api-client",
+    "typescript",
+    "ky",
+    "tanstack-query",
+    "code-generator",
+    "fsd"
+  ],
+  "author": "sen2y",
   "license": "MIT",
-  "description": "Swagger API client generator for ky + TanStack Query with FSD pattern",
   "type": "module",
   "bin": {
     "fetch-swagger": "./scripts/fetch-swagger.js",
@@ -20,5 +30,13 @@
     "node-fetch": "^3.3.2",
     "swagger-typescript-api": "^13.0.22"
   },
-  "packageManager": "yarn@4.7.0"
+  "packageManager": "yarn@4.7.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sen2y/swagger-client-autogen.git"
+  },
+  "homepage": "https://github.com/sen2y/swagger-client-autogen#readme",
+  "bugs": {
+    "url": "https://github.com/sen2y/swagger-client-autogen/issues"
+  }
 }
