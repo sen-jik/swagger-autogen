@@ -133,8 +133,9 @@ import type {
   DefaultError,
   UseQueryOptions,
   UseSuspenseQueryOptions,
+  UseInfiniteQueryOptions,
 } from '@tanstack/react-query';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery, useInfiniteQuery } from '@tanstack/react-query';
 
 <%~ includeFile('../dto-import.ejs', { ...it }) %>
 
@@ -190,6 +191,107 @@ export const <%~ queryConfig.suspenseHookName %> = <TData = <%~ queryConfig.resp
     ...options,
   });
 }
+
+<% } %>
+
+// ------------------ Infinite Query --------------------------
+<%
+const infiniteQueryConfigs = queryConfigs.filter(config => {
+  // Check if query has pagination params
+  const queryParams = config.route.request.query?.properties || [];
+  return queryParams.some(prop =>
+    ['page', 'cursor', 'offset', 'pageToken'].includes(prop.name)
+  );
+});
+
+for (const queryConfig of infiniteQueryConfigs) {
+  const routeDocs = includeFile("../route-docs.ejs", {
+    config,
+    route: queryConfig.route,
+    utils
+  });
+
+  // Detect pagination parameter
+  const queryParams = queryConfig.route.request.query.properties;
+  const paginationParam = queryParams.find(p =>
+    ['page', 'cursor', 'offset', 'pageToken'].includes(p.name)
+  );
+
+  const paginationType = paginationParam.name; // 'page' | 'cursor' | 'offset' | 'pageToken'
+
+  // Generate appropriate getNextPageParam logic
+  let nextPageLogic = '';
+  if (paginationType === 'page') {
+    nextPageLogic = `
+    if (!lastPage?.hasNext) return undefined;
+    return (lastPage?.page ?? 0) + 1;`;
+  } else if (paginationType === 'cursor') {
+    nextPageLogic = `
+    if (!lastPage?.nextCursor) return undefined;
+    return lastPage.nextCursor;`;
+  } else if (paginationType === 'offset') {
+    nextPageLogic = `
+    const nextOffset = (lastPage?.offset ?? 0) + (lastPage?.limit ?? 20);
+    if (nextOffset >= (lastPage?.total ?? 0)) return undefined;
+    return nextOffset;`;
+  } else if (paginationType === 'pageToken') {
+    nextPageLogic = `
+    if (!lastPage?.nextPageToken) return undefined;
+    return lastPage.nextPageToken;`;
+  }
+
+  // Generate getPreviousPageParam logic
+  let prevPageLogic = '';
+  if (paginationType === 'page') {
+    prevPageLogic = `
+    if ((firstPage?.page ?? 1) <= 1) return undefined;
+    return (firstPage?.page ?? 1) - 1;`;
+  } else if (paginationType === 'offset') {
+    prevPageLogic = `
+    const prevOffset = (firstPage?.offset ?? 0) - (firstPage?.limit ?? 20);
+    if (prevOffset < 0) return undefined;
+    return prevOffset;`;
+  } else {
+    prevPageLogic = `
+    return undefined; // cursor/token pagination doesn't support backward navigation`;
+  }
+
+  // Generate hook name
+  const infiniteHookName = queryConfig.hookName.replace('Query', 'InfiniteQuery');
+
+  // Get params without pagination param
+  const requestParamsWithoutPagination = queryConfig.requestParams
+    .split(',')
+    .filter(p => !p.includes('params'))
+    .join(', ');
+
+  const requestParamsWithoutTypesNoPagination = queryConfig.requestParamsWithoutTypes
+    .split(',')
+    .filter(p => p !== 'params')
+    .join(', ');
+%>
+
+/**
+<%~ routeDocs.lines %>
+ * @description Infinite query for pagination
+ */
+export const <%~ infiniteHookName %> = <TData = <%~ queryConfig.responseDto %>>(
+  <%~ requestParamsWithoutPagination ? `${requestParamsWithoutPagination},` : '' %>
+  options?: Omit<UseInfiniteQueryOptions<<%~ queryConfig.responseDto %>, DefaultError, TData>, 'queryKey' | 'queryFn' | 'initialPageParam' | 'getNextPageParam'>
+) => {
+  return useInfiniteQuery({
+    queryKey: <% ~moduleName.toUpperCase() %>_QUERY_KEY.<% ~queryConfig.queryKeyName %>(<% ~requestParamsWithoutTypesNoPagination %><% if (requestParamsWithoutTypesNoPagination) { %>, <% } %>params),
+    queryFn: ({ pageParam }) => {
+      return <% ~moduleName %>Api.<% ~queryConfig.functionName %>(<% if (requestParamsWithoutTypesNoPagination) { %><% ~requestParamsWithoutTypesNoPagination %>, <% } %>{ ...params, <%= paginationType %>: pageParam });
+    },
+    initialPageParam: <%= paginationType === 'page' ? '1' : paginationType === 'offset' ? '0' : 'undefined' %> as any,
+    getNextPageParam: (lastPage, allPages) => {<%~ nextPageLogic %>
+    },
+    getPreviousPageParam: (firstPage, allPages) => {<%~ prevPageLogic %>
+    },
+    ...options,
+  });
+};
 
 <% } %>
 <% } %>

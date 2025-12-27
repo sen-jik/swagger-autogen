@@ -1,0 +1,100 @@
+<%
+/**
+ * API 메서드 호출 템플릿 (axios 버전)
+ * - 각 Swagger 엔드포인트에 대한 TypeScript 메서드 생성
+ * - axios HTTP 클라이언트를 사용한 요청 처리
+ * - 경로 파라미터, 쿼리 파라미터, 요청 본문, 헤더 지원
+ * - 타입 안전성을 위한 TypeScript 타입 적용
+ */
+
+const { utils, route, config, apiClassName } = it;
+const { _, pascalCase } = utils;
+const routeDocs = includeFile("../route-docs", { config, route, utils });
+
+/**
+ * API 메서드명 생성
+ * HTTP 메서드 + 경로를 조합하여 camelCase 함수명 생성
+ * 예: GET /users/{id} -> getUserById
+ */
+const functionName = route.request.method + pascalCase(`${route.request.path
+        .split('/')
+        .map((segment) =>
+                segment.includes('${') ? `By_${segment.replace(/[${}]/g, '')}` : segment
+        )
+        .join('_')}`);
+
+// 응답 타입 추출 (성공 응답의 타입 또는 any)
+const responseType = route.responseBodyInfo?.success?.type || 'any';
+
+// 경로 파라미터 추출 (예: /users/{id}에서 id)
+const pathParams = _.values(route.request.parameters);
+const hasPathParams = pathParams.length > 0;
+
+// 요청 본문 데이터 (POST, PUT, PATCH에서 사용)
+const payload = route.request.payload;
+
+// 쿼리 파라미터 (URL 뒤에 ?key=value 형태)
+const query = route.request.query;
+
+// 커스텀 헤더
+const headers = route.request.headers;
+const headerName = headers ? `${pascalCase(route.routeName.usage)}Headers` : null;
+
+// 쿼리 파라미터 타입명 생성
+const queryTypeName = query ? `${pascalCase(route.routeName.usage)}QueryParams` : null;
+
+/**
+ * 메서드 파라미터 문자열 생성
+ * @param {Array} params - 경로 파라미터 배열
+ * @param {Object} query - 쿼리 파라미터 객체
+ * @param {Object} payload - 요청 본문 객체
+ * @param {string} headerName - 헤더 타입명
+ * @returns {string} 메서드 파라미터 문자열
+ */
+const generateParams = (params, query, payload, headerName) => {
+    const paramList = [
+        // 경로 파라미터 (예: id: number)
+        ...(params ? params.map(param => `${param.name}${param.optional ? '?' : ''}: ${param.type}`) : []),
+        // 쿼리 파라미터 (예: params?: UserQueryParams)
+        ...(query ? [`params${query.optional ? '?' : ''}: ${queryTypeName || query.type}`] : []),
+        // 요청 본문 (예: data: CreateUserDto)
+        ...(payload ? [`data${payload.optional ? '?' : ''}: ${payload.type}`] : [])
+    ];
+
+    // axios AxiosRequestConfig에서 제외할 타입들 (중복 방지)
+    const omitTypes = [
+        ...(query ? ["'params'"] : []),
+        ...(payload ? ["'data'"] : []),
+        ...(headerName ? ["'headers'"] : [])
+    ];
+
+    // axios AxiosRequestConfig 타입 생성 (중복되는 속성 제외)
+    const optionsType = omitTypes.length > 0
+            ? `Omit<AxiosRequestConfig, ${omitTypes.join(' | ')}>${headerName ? ` & { headers: ${headerName} }` : ''}`
+            : 'AxiosRequestConfig';
+
+    // axios 인스턴스와 옵션 파라미터 추가
+    paramList.push('axiosInstance?: AxiosInstance', `options?: ${optionsType}`);
+    return paramList.join(', ');
+};
+%>
+
+/**
+<%~ routeDocs.lines %> */
+<%= functionName %>(<%~ generateParams(pathParams, query, payload, headerName) %>) {
+  // axios 인스턴스 선택 (전달된 인스턴스 또는 기본 인스턴스)
+  const instance = axiosInstance ?? this.instance;
+
+  // HTTP 요청 실행 및 응답 데이터 반환
+  return instance.request<<%= responseType %>>({
+    method: '<%= route.request.method.toUpperCase() %>',
+    url: `<%= route.request.path.replace(/^\\//, '') %>`,
+<% if (query) { %>
+    params,
+<% } %>
+<% if (payload) { %>
+    data,
+<% } %>
+    ...options,
+  }).then(res => res.data);
+}

@@ -1,6 +1,6 @@
 <%
-/** 
-* @description Tanstack Query - Mutation 생성 템플릿 입니다.
+/**
+* @description Tanstack Query - Mutation 생성 템플릿 (ky 버전)
 */
 
 const { utils, route, modelTypes, config } = it;
@@ -26,12 +26,12 @@ const getRequestParams = ({ parameters = [], query, payload, routeName }) => {
         withTypes: [
             ...parameters.map(({ name, type, optional }) => `${name}${optional ? '?' : ''}: ${removeBracket(type)}`),
             queryParamsDto ? `params${query.optional ? '?' : ''}: ${queryParamsDto}` : '',
-            payload ? `body${payload.optional ? '?' : ''}: ${removeBracket(payload.type)}` : '',
+            payload ? `data${payload.optional ? '?' : ''}: ${removeBracket(payload.type)}` : '',
         ].filter(Boolean).join(', '),
         withoutTypes: [
             ...parameters.map(({ name, optional }) => `${name}${optional ? '?' : ''}`),
             query ? `params` : '',
-            payload ? 'body' : '',
+            payload ? 'data' : '',
         ].filter(Boolean).join(', ')
     } };
 
@@ -100,7 +100,7 @@ useQueryClient,
 import { useMutation } from '@tanstack/react-query';
 import type{ KyInstance, Options } from 'ky';
 
-<%~ includeFile('../dto-import.ejs', { ...it }) %>
+<%~ includeFile('../../modular/dto-import.ejs', { ...it }) %>
 
 import { <%= moduleName %>Api } from './instance';
 
@@ -123,7 +123,7 @@ const mutations = {
 };
 
 <% for (const mutationConfig of mutationConfigs) {
-    const routeDocs = includeFile("../route-docs.ejs", { config, route: mutationConfig.route, utils });
+    const routeDocs = includeFile("../../modular/route-docs.ejs", { config, route: mutationConfig.route, utils });
 %>
 
 /**
