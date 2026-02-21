@@ -15,4 +15,5 @@ docs
 examples
 .github
 .vscode
-.idea 
+.idea
+.yarn
