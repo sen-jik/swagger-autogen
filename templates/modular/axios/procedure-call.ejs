@@ -88,7 +88,7 @@ const generateParams = (params, query, payload, headerName) => {
   // HTTP 요청 실행 및 응답 데이터 반환
   return instance.request<<%= responseType %>>({
     method: '<%= route.request.method.toUpperCase() %>',
-    url: `<%= route.request.path.replace(/^\\//, '') %>`,
+    url: `<%= route.request.path.replace(/^\//, '') %>`,
 <% if (query) { %>
     params,
 <% } %>

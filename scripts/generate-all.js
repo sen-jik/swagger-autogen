@@ -105,11 +105,24 @@ const parseArguments = () => {
  * @returns {Object} 설정된 출력 경로들
  */
 const setupOutputPaths = (config) => {
-  const dtoPath = config.output?.dto || config.dtoOutputPath || "src/shared/api/dto.ts";
-  const apiPath = config.output?.api || config.apiOutputPath || "src/entities/{moduleName}/api/index.ts";
-  const apiInstancePath = config.output?.instance || config.apiInstanceOutputPath || "src/entities/{moduleName}/api/instance.ts";
-  const queryPath = config.output?.queries || config.queryOutputPath || "src/entities/{moduleName}/api/queries.ts";
-  const mutationPath = config.output?.mutations || config.mutationOutputPath || "src/entities/{moduleName}/api/mutations.ts";
+  const dtoPath =
+    config.output?.dto || config.dtoOutputPath || "src/shared/api/dto.ts";
+  const apiPath =
+    config.output?.api ||
+    config.apiOutputPath ||
+    "src/entities/{moduleName}/api/index.ts";
+  const apiInstancePath =
+    config.output?.instance ||
+    config.apiInstanceOutputPath ||
+    "src/entities/{moduleName}/api/instance.ts";
+  const queryPath =
+    config.output?.queries ||
+    config.queryOutputPath ||
+    "src/entities/{moduleName}/api/queries.ts";
+  const mutationPath =
+    config.output?.mutations ||
+    config.mutationOutputPath ||
+    "src/entities/{moduleName}/api/mutations.ts";
 
   return {
     dto: {
@@ -270,16 +283,20 @@ const generateApiFunctionCode = async (config, outputPaths) => {
     ? path.resolve(process.cwd(), projectTemplate, "modular")
     : path.resolve(__dirname, "../templates/modular");
 
-  const finalTemplatePath = getTemplatePath(templatePath, httpClient || "axios");
+  const finalTemplatePath = getTemplatePath(
+    templatePath,
+    httpClient || "axios"
+  );
 
-  console.log(`🔄 Generating API classes and DTOs with ${httpClient || "axios"}...`);
+  console.log(
+    `🔄 Generating API classes and DTOs with ${httpClient || "axios"}...`
+  );
 
   const apiFunctionCode = await generateApiCode({
     uri,
     username,
     password,
     templates: finalTemplatePath,
-    prettier: false,
   });
 
   for (const { fileName, fileContent } of apiFunctionCode.files) {
@@ -337,16 +354,20 @@ const generateTanstackQueryCode = async (config, outputPaths) => {
     ? path.resolve(process.cwd(), projectTemplate, "tanstack-query")
     : path.resolve(__dirname, "../templates/tanstack-query");
 
-  const finalTemplatePath = getTemplatePath(templatePath, httpClient || "axios");
+  const finalTemplatePath = getTemplatePath(
+    templatePath,
+    httpClient || "axios"
+  );
 
-  console.log(`🔄 Generating TanStack Query hooks with ${httpClient || "axios"}...`);
+  console.log(
+    `🔄 Generating TanStack Query hooks with ${httpClient || "axios"}...`
+  );
 
   const tanstackQueryCode = await generateApiCode({
     uri,
     username,
     password,
     templates: finalTemplatePath,
-    prettier: false,
   });
 
   for (const { fileName, fileContent } of tanstackQueryCode.files) {
