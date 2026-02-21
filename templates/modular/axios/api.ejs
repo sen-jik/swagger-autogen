@@ -1,20 +1,43 @@
 <%
-const { utils, route, modelTypes } = it;
-const { pascalCase } = utils;
+/**
+ * API 클래스 생성 템플릿 (axios 버전)
+ * - Swagger 태그별로 API 클래스 생성
+ * - axios HTTP 클라이언트 기반
+ * - 타입 안전성을 위한 TypeScript 지원
+ */
+
+const { utils, route, config, modelTypes } = it;
+const { _, pascalCase, require } = utils;
+
+// 모듈명을 PascalCase로 변환하여 클래스명 생성 (예: user -> UserApi)
 const apiClassName = pascalCase(route.moduleName);
+
+// 해당 모듈의 모든 API 엔드포인트
 const routes = route.routes;
+
+// 사용 가능한 DTO 타입들의 이름 목록
+const dataContracts = _.map(modelTypes, "name");
 %>
 
-import type { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { AxiosInstance, AxiosRequestConfig } from 'axios';
 
 <%~ includeFile('../dto-import.ejs', { ...it }) %>
 
+/**
+ * <%= route.moduleName %> 모듈 API 클래스
+ * - axios HTTP 클라이언트를 사용한 API 호출
+ * - 타입 안전성을 위한 TypeScript 지원
+ */
 export class <%= apiClassName %>Api {
-  private readonly instance: AxiosInstance;
+private readonly instance: AxiosInstance;
 
-  constructor(instance: AxiosInstance) {
-    this.instance = instance;
-  }
+/**
+ * API 클래스 생성자
+ * @param instance - axios HTTP 클라이언트 인스턴스
+ */
+constructor(instance: AxiosInstance) {
+this.instance = instance;
+}
 
 <% for (const route of routes) { %>
 <%~ includeFile('./procedure-call.ejs', { ...it, route, apiClassName }) %>
