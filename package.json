@@ -1,8 +1,8 @@
 {
   "name": "swagger-fsd-gen",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "main": "index.js",
-  "description": "Swagger API client generator that creates type-safe API clients using ky and TanStack Query with Feature Sliced Design pattern. Automatically generates API client code from Swagger/OpenAPI specifications.",
+  "description": "Swagger API client generator that creates type-safe API clients with axios/ky support, TanStack Query (including infinite queries), and Feature Sliced Design pattern. Automatically generates API client code from Swagger/OpenAPI specifications.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,7 +12,9 @@
     "api-client",
     "typescript",
     "ky",
+    "axios",
     "tanstack-query",
+    "infinite-query",
     "code-generator",
     "fsd"
   ],
@@ -24,6 +26,7 @@
     "generate-all": "./scripts/generate-all.js"
   },
   "dependencies": {
+    "chokidar": "^3.5.3",
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
     "node-fetch": "^3.3.2",

@@ -21,26 +21,31 @@
  * );
  */
 export const fetchSwagger = async (url, username, password) => {
-  // HTTP Basic Authentication 헤더 생성
-  const credentials = btoa(`${username}:${password}`);
+  const headers = {};
+  if (username && password) {
+    const credentials = Buffer.from(`${username}:${password}`).toString(
+      "base64"
+    );
+    headers.Authorization = `Basic ${credentials}`;
+  }
 
   try {
     // Swagger 문서 HTTP 요청
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        Authorization: `Basic ${credentials}`,
-      },
+      headers,
     });
 
     // HTTP 응답 상태 확인
     if (!response.ok) {
-      console.error("failed with status code", response.status);
+      throw new Error(`Failed to fetch Swagger: HTTP ${response.status}`);
     }
 
     // JSON 형태로 파싱하여 반환
     return response.json();
   } catch (error) {
-    console.error("There was a problem with the fetch operation:", error);
+    throw new Error(
+      `There was a problem with the fetch operation: ${error.message}`
+    );
   }
 };

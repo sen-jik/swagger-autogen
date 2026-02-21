@@ -1,0 +1,22 @@
+<%
+const { utils, route, modelTypes } = it;
+const { pascalCase } = utils;
+const apiClassName = pascalCase(route.moduleName);
+const routes = route.routes;
+%>
+
+import type { AxiosInstance, AxiosRequestConfig } from 'axios';
+
+<%~ includeFile('../dto-import.ejs', { ...it }) %>
+
+export class <%= apiClassName %>Api {
+  private readonly instance: AxiosInstance;
+
+  constructor(instance: AxiosInstance) {
+    this.instance = instance;
+  }
+
+<% for (const route of routes) { %>
+<%~ includeFile('./procedure-call.ejs', { ...it, route, apiClassName }) %>
+<% } %>
+}
