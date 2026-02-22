@@ -6,10 +6,6 @@
 const { utils, route, modelTypes, config } = it;
 const { pascalCase, internalCase: camelCase } = utils;
 const { moduleName, routes } = route;
-const isAxios = config.httpClientType === 'axios';
-const clientInstanceParam = isAxios ? 'axiosInstance' : 'kyInstance';
-const clientInstanceType = isAxios ? 'AxiosInstance' : 'KyInstance';
-const clientOptionsType = isAxios ? 'AxiosRequestConfig' : 'Options';
 
 const getFunctionName = ({ request: { method, path } }) =>
         `${method}${pascalCase(path
@@ -93,7 +89,7 @@ if (mutationConfigs.length > 0) {
             .filter(config => config.hasVariables)
             .map(config => {
                 const headerName = config.route.specificArgs.headers ? `${pascalCase(config.route.routeName.usage)}Headers` : null;
-                return `type T${pascalCase(config.functionName)}Variables = { ${config.requestParams}, ${clientInstanceParam}?: ${clientInstanceType}; options?: ${headerName ? `Omit<${clientOptionsType}, 'headers'> & { headers: ${headerName} }` : clientOptionsType}; };`
+                return `type T${pascalCase(config.functionName)}Variables = { ${config.requestParams}, kyInstance?: KyInstance; options?: ${headerName ? `Omit<Options, 'headers'> & { headers: ${headerName} }` : 'Options'}; };`
             })
             .join('\n');
 
@@ -107,11 +103,7 @@ UseMutationOptions,
 useQueryClient,
 } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
-<% if (isAxios) { %>
-import type{ AxiosInstance, AxiosRequestConfig } from 'axios';
-<% } else { %>
 import type{ KyInstance, Options } from 'ky';
-<% } %>
 
 <%~ includeFile('../dto-import.ejs', { ...it }) %>
 
@@ -127,8 +119,8 @@ const mutations = {
 <% for (const config of mutationConfigs) { %>
     <%= config.functionName %>: () => ({
     mutationFn: <% if (config.hasVariables) { %>(variables: T<%= pascalCase(config.functionName) %>Variables) => {
-    const { <%= config.requestParamsWithoutTypes %>, <%= clientInstanceParam %>, options } = variables;
-    return <%= moduleName %>Api.<%= config.functionName %>(<%= config.requestParamsWithoutTypes %>, <%= clientInstanceParam %>, options);
+    const { <%= config.requestParamsWithoutTypes %>, kyInstance, options } = variables;
+    return <%= moduleName %>Api.<%= config.functionName %>(<%= config.requestParamsWithoutTypes %>, kyInstance, options);
     }<% } else { %>() => <%= moduleName %>Api.<%= config.functionName %>()<% } %>,
     mutationKey: <% ~moduleName.toUpperCase() %>_MUTATION_KEY.<% ~config.mutationKeyName %>,
     }),

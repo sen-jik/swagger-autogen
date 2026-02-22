@@ -2,7 +2,7 @@
 
 /**
  * Swagger API 클라이언트 자동 생성 도구
- * - axios/ky HTTP 클라이언트 기반 API 클래스 생성
+ * - ky HTTP 클라이언트 기반 API 클래스 생성
  * - TanStack Query 훅 생성 (useQuery, useMutation)
  * - FSD(Feature-Sliced Design) 패턴 적용
  */
@@ -72,7 +72,6 @@ const parseArguments = () => {
       "uri",
       "username",
       "password",
-      "http-client",
       "dto-output-path",
       "api-output-path",
       "api-instance-output-path",
@@ -84,7 +83,6 @@ const parseArguments = () => {
       u: "uri",
       un: "username",
       pw: "password",
-      hc: "http-client",
       dp: "dto-output-path",
       ap: "api-output-path",
       aip: "api-instance-output-path",
@@ -98,7 +96,6 @@ const parseArguments = () => {
     uri: argv.uri,
     username: argv.username,
     password: argv.password,
-    httpClient: argv["http-client"],
     dtoOutputPath: argv["dto-output-path"],
     apiOutputPath: argv["api-output-path"],
     apiInstanceOutputPath: argv["api-instance-output-path"],
@@ -106,23 +103,6 @@ const parseArguments = () => {
     mutationOutputPath: argv["mutation-output-path"],
     projectTemplate: argv["project-template"],
   };
-};
-
-/**
- * HTTP 클라이언트 모드 정규화
- * @param {string | undefined} input
- * @returns {"axios" | "ky"}
- */
-const resolveHttpClient = (input) => {
-  const normalized = (input ?? "ky").toString().toLowerCase();
-
-  if (normalized === "axios" || normalized === "ky") {
-    return normalized;
-  }
-
-  throw new Error(
-    `Invalid --http-client value "${input}". Supported values: axios | ky`
-  );
 };
 
 /**
@@ -192,7 +172,6 @@ const printUsage = (outputPaths) => {
   console.error(
     "Usage: generate-all --uri <swagger-url|swagger-file-name> " +
       "[--username <username>] [--password <password>] " +
-      "[--http-client <axios|ky>] " +
       "[--dto-output-path <dto-output-path>] " +
       "[--api-output-path <api-output-path>] " +
       "[--query-output-path <query-output-path>] " +
@@ -217,12 +196,10 @@ export const generateApiCode = async ({
   uri,
   username,
   password,
-  httpClient,
   templates,
   ...params
 }) => {
   const isLocal = !isUrl(uri);
-  const httpClientType = httpClient === "axios" ? "axios" : "fetch";
 
   return generateApi({
     input: isLocal ? path.resolve(process.cwd(), uri) : undefined,
@@ -249,7 +226,6 @@ export const generateApiCode = async ({
     schemaParsers: {
       complexAnyOf: AnyOfSchemaParser,
     },
-    httpClientType,
     ...params,
   });
 };
@@ -272,7 +248,7 @@ const formatWithProjectPrettier = (filePath) => {
  * @param {Object} outputPaths - 출력 경로 설정
  */
 const generateApiFunctionCode = async (args, outputPaths) => {
-  const { projectTemplate, uri, username, password, httpClient } = args;
+  const { projectTemplate, uri, username, password } = args;
 
   const templatePath = projectTemplate
     ? path.resolve(process.cwd(), projectTemplate)
@@ -284,10 +260,8 @@ const generateApiFunctionCode = async (args, outputPaths) => {
     uri,
     username,
     password,
-    httpClient,
     templates: templatePath,
-    // swagger-typescript-api + prettier 조합에서 parser 추론 실패를 방지
-    prettier: { parser: "typescript" },
+    prettier: false, // prettier 비활성화
   });
 
   for (const { fileName, fileContent } of apiFunctionCode.files) {
@@ -333,7 +307,7 @@ const generateApiFunctionCode = async (args, outputPaths) => {
  * @param {Object} outputPaths - 출력 경로 설정
  */
 const generateTanstackQueryCode = async (args, outputPaths) => {
-  const { projectTemplate, uri, username, password, httpClient } = args;
+  const { projectTemplate, uri, username, password } = args;
 
   const templatePath = projectTemplate
     ? path.resolve(process.cwd(), projectTemplate, "tanstack-query")
@@ -345,10 +319,8 @@ const generateTanstackQueryCode = async (args, outputPaths) => {
     uri,
     username,
     password,
-    httpClient,
     templates: templatePath,
-    // swagger-typescript-api + prettier 조합에서 parser 추론 실패를 방지
-    prettier: { parser: "typescript" },
+    prettier: false, // prettier 비활성화
   });
 
   for (const { fileName, fileContent } of tanstackQueryCode.files) {
@@ -397,9 +369,6 @@ const main = async () => {
   }
 
   try {
-    args.httpClient = resolveHttpClient(args.httpClient);
-    console.log(`🌐 HTTP client mode: ${args.httpClient}`);
-
     // 1. API 클래스와 DTO 생성
     await generateApiFunctionCode(args, outputPaths);
 

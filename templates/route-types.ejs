@@ -4,13 +4,12 @@ const { _, pascalCase, require } = utils;
 const apiClassName = pascalCase(route.moduleName);
 const routes = route.routes;
 const dataContracts = _.map(modelTypes, "name");
-const isAxios = config.httpClientType === 'axios';
 %>
 
-import { <%= isAxios ? 'axiosInstance' : 'kyInstance' %> } from "@/shared/api"
+import { kyInstance } from "@/shared/api"
 
 import { <%= apiClassName %>Api } from './index'
 
-const <%= route.moduleName %>Api = new <%= apiClassName %>Api(<%= isAxios ? 'axiosInstance' : 'kyInstance' %>);
+const <%= route.moduleName %>Api = new <%= apiClassName %>Api(kyInstance);
 
 export { <%= route.moduleName %>Api };

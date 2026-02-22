@@ -40,12 +40,6 @@ generate-all --uri https://api.example.com/swagger.json
 # 로컬 파일에서 생성
 generate-all --uri ./swagger/my-api.yml
 
-# axios 클라이언트로 생성
-generate-all --uri ./swagger/my-api.yml --http-client axios
-
-# ky 클라이언트로 생성 (기본값)
-generate-all --uri ./swagger/my-api.yml --http-client ky
-
 # 인증이 필요한 경우
 generate-all --uri https://api.example.com/swagger.json --username admin --password secret
 ```
@@ -71,11 +65,7 @@ src/
 ### 1. 필요한 패키지 설치
 
 ```bash
-# ky를 사용할 때
 npm install ky @tanstack/react-query
-
-# axios를 사용할 때
-npm install axios @tanstack/react-query
 ```
 
 ### 2. API 인스턴스 설정

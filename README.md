@@ -1,10 +1,10 @@
 # swagger-fsd-gen
 
-Swagger/OpenAPI 문서를 기반으로 **axios/ky + TanStack Query + FSD(Feature-Sliced Design) 패턴**에 맞는 API 클라이언트를 자동으로 생성하는 도구입니다.
+Swagger/OpenAPI 문서를 기반으로 **ky + TanStack Query + FSD(Feature-Sliced Design) 패턴**에 맞는 API 클라이언트를 자동으로 생성하는 도구입니다.
 
 ## ✨ 주요 기능
 
-- 🚀 **axios/ky HTTP 클라이언트 선택** 기반 API 클래스 자동 생성
+- 🚀 **ky HTTP 클라이언트** 기반 API 클래스 자동 생성
 - 🔄 **TanStack Query** 훅 자동 생성 (useQuery, useMutation)
 - 📁 **FSD(Feature-Sliced Design)** 패턴 자동 적용
 - 🔐 **HTTP Basic Authentication** 지원
@@ -33,12 +33,6 @@ npx generate-all --uri https://api.example.com/swagger.json --username your-user
 # yarn
 yarn fetch-swagger --url https://api.example.com/swagger.json --username your-username --password your-password
 yarn generate-all --uri https://api.example.com/swagger.json --username your-username --password your-password
-
-# axios 클라이언트로 생성
-yarn generate-all --uri https://api.example.com/swagger.json --http-client axios
-
-# ky 클라이언트로 생성 (기본값)
-yarn generate-all --uri https://api.example.com/swagger.json --http-client ky
 ```
 
 ### 2. package.json에 스크립트 추가 (권장)
@@ -97,7 +91,6 @@ src/
 | --uri                  | Swagger 문서 URL/경로 | 필수                                       |
 | --username             | Basic Auth 사용자명   | -                                          |
 | --password             | Basic Auth 비밀번호   | -                                          |
-| --http-client          | HTTP 클라이언트 선택  | ky (`axios`, `ky`)                         |
 | --dto-output-path      | DTO 파일 경로         | src/shared/api/dto.ts                      |
 | --api-output-path      | API 클래스 경로       | src/entities/{moduleName}/api/index.ts     |
 | --query-output-path    | Query 훅 경로         | src/entities/{moduleName}/api/queries.ts   |
