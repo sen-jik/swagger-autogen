@@ -2,7 +2,7 @@
 
 /**
  * Swagger API 클라이언트 자동 생성 도구
- * - ky HTTP 클라이언트 기반 API 클래스 생성
+ * - axios/ky HTTP 클라이언트 기반 API 클래스 생성
  * - TanStack Query 훅 생성 (useQuery, useMutation)
  * - FSD(Feature-Sliced Design) 패턴 적용
  */
@@ -15,9 +15,52 @@ import { fetchSwagger } from "../utils/fetch-swagger.js";
 import { writeFileToPath } from "../utils/file.js";
 import { AnyOfSchemaParser } from "../utils/parser.js";
 import { isUrl } from "../utils/url.js";
+import fs from "node:fs";
+import { execSync } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * 프로젝트의 Prettier 설정을 로드
+ * @returns {Object} Prettier 설정
+ */
+const loadPrettierConfig = () => {
+  const configPaths = [
+    ".prettierrc",
+    ".prettierrc.json",
+    ".prettierrc.js",
+    ".prettierrc.cjs",
+    "prettier.config.js",
+    "prettier.config.cjs",
+  ];
+
+  for (const configPath of configPaths) {
+    const fullPath = path.resolve(process.cwd(), configPath);
+    if (fs.existsSync(fullPath)) {
+      try {
+        if (configPath.endsWith(".js") || configPath.endsWith(".cjs")) {
+          return require(fullPath);
+        }
+        return JSON.parse(fs.readFileSync(fullPath, "utf-8"));
+      } catch (error) {
+        console.warn(
+          `Warning: Failed to load prettier config from ${configPath}`
+        );
+      }
+    }
+  }
+
+  // 기본 Prettier 설정
+  return {
+    semi: true,
+    trailingComma: "es5",
+    singleQuote: true,
+    printWidth: 100,
+    tabWidth: 2,
+    arrowParens: "always",
+  };
+};
 
 /**
  * 명령행 인수 파싱
@@ -29,6 +72,7 @@ const parseArguments = () => {
       "uri",
       "username",
       "password",
+      "http-client",
       "dto-output-path",
       "api-output-path",
       "api-instance-output-path",
@@ -40,6 +84,7 @@ const parseArguments = () => {
       u: "uri",
       un: "username",
       pw: "password",
+      hc: "http-client",
       dp: "dto-output-path",
       ap: "api-output-path",
       aip: "api-instance-output-path",
@@ -53,6 +98,7 @@ const parseArguments = () => {
     uri: argv.uri,
     username: argv.username,
     password: argv.password,
+    httpClient: argv["http-client"],
     dtoOutputPath: argv["dto-output-path"],
     apiOutputPath: argv["api-output-path"],
     apiInstanceOutputPath: argv["api-instance-output-path"],
@@ -60,6 +106,23 @@ const parseArguments = () => {
     mutationOutputPath: argv["mutation-output-path"],
     projectTemplate: argv["project-template"],
   };
+};
+
+/**
+ * HTTP 클라이언트 모드 정규화
+ * @param {string | undefined} input
+ * @returns {"axios" | "ky"}
+ */
+const resolveHttpClient = (input) => {
+  const normalized = (input ?? "ky").toString().toLowerCase();
+
+  if (normalized === "axios" || normalized === "ky") {
+    return normalized;
+  }
+
+  throw new Error(
+    `Invalid --http-client value "${input}". Supported values: axios | ky`
+  );
 };
 
 /**
@@ -129,6 +192,7 @@ const printUsage = (outputPaths) => {
   console.error(
     "Usage: generate-all --uri <swagger-url|swagger-file-name> " +
       "[--username <username>] [--password <password>] " +
+      "[--http-client <axios|ky>] " +
       "[--dto-output-path <dto-output-path>] " +
       "[--api-output-path <api-output-path>] " +
       "[--query-output-path <query-output-path>] " +
@@ -153,13 +217,14 @@ export const generateApiCode = async ({
   uri,
   username,
   password,
+  httpClient,
   templates,
   ...params
 }) => {
   const isLocal = !isUrl(uri);
+  const httpClientType = httpClient === "axios" ? "axios" : "fetch";
 
   return generateApi({
-    // 로컬 파일 또는 원격 URL 처리
     input: isLocal ? path.resolve(process.cwd(), uri) : undefined,
     spec: !isLocal && (await fetchSwagger(uri, username, password)),
     templates: templates,
@@ -167,18 +232,38 @@ export const generateApiCode = async ({
     generateUnionEnums: true,
     cleanOutput: false,
     silent: true,
-    // 프로젝트의 Prettier 설정을 사용
-    prettier: true,
+    prettier: {
+      semi: true,
+      trailingComma: "es5",
+      singleQuote: true,
+      printWidth: 100,
+      tabWidth: 2,
+      arrowParens: "always",
+      bracketSameLine: false,
+      jsxSingleQuote: false,
+    },
     modular: true,
-    moduleNameFirstTag: true, // Swagger 태그를 모듈명으로 사용
+    moduleNameFirstTag: true,
     moduleNameIndex: 1,
-    // typeSuffix: "Dto", // 타입에 Dto 접미사 추가
     generateRouteTypes: true,
     schemaParsers: {
       complexAnyOf: AnyOfSchemaParser,
     },
+    httpClientType,
     ...params,
   });
+};
+
+/**
+ * 생성된 파일에 프로젝트의 prettier 적용
+ * @param {string} filePath - 파일 경로
+ */
+const formatWithProjectPrettier = (filePath) => {
+  try {
+    execSync(`prettier --write "${filePath}"`, { stdio: "inherit" });
+  } catch (error) {
+    console.warn(`Warning: Failed to format ${filePath}`);
+  }
 };
 
 /**
@@ -187,9 +272,8 @@ export const generateApiCode = async ({
  * @param {Object} outputPaths - 출력 경로 설정
  */
 const generateApiFunctionCode = async (args, outputPaths) => {
-  const { projectTemplate, uri, username, password } = args;
+  const { projectTemplate, uri, username, password, httpClient } = args;
 
-  // 템플릿 경로 결정 (커스텀 템플릿 또는 기본 템플릿)
   const templatePath = projectTemplate
     ? path.resolve(process.cwd(), projectTemplate)
     : path.resolve(__dirname, "../templates");
@@ -200,41 +284,43 @@ const generateApiFunctionCode = async (args, outputPaths) => {
     uri,
     username,
     password,
+    httpClient,
     templates: templatePath,
+    // swagger-typescript-api + prettier 조합에서 parser 추론 실패를 방지
+    prettier: { parser: "typescript" },
   });
 
-  // 생성된 파일들을 적절한 위치에 저장
   for (const { fileName, fileContent } of apiFunctionCode.files) {
-    // http-client 파일은 사용하지 않음 (ky 사용)
     if (fileName === "http-client") continue;
 
+    let outputPath;
     if (fileName === "data-contracts") {
-      // DTO 타입 정의 파일 저장
-      await writeFileToPath(outputPaths.dto.absolutePath, fileContent);
+      outputPath = outputPaths.dto.absolutePath;
+      await writeFileToPath(outputPath, fileContent);
+      formatWithProjectPrettier(outputPath);
       console.log(`✅ Generated DTO: ${outputPaths.dto.relativePath}`);
     } else {
-      // 모듈명 추출 (예: UserRoute -> user)
       const moduleName = fileName.replace("Route", "").toLowerCase();
 
       if (fileName.match(/Route$/)) {
-        // API 인스턴스 파일 생성 (예: UserRoute -> user/api/instance.ts)
-        const output = outputPaths.apiInstance.absolutePath.replace(
+        outputPath = outputPaths.apiInstance.absolutePath.replace(
           "{moduleName}",
           moduleName
         );
-        await writeFileToPath(output, fileContent);
+        await writeFileToPath(outputPath, fileContent);
+        formatWithProjectPrettier(outputPath);
         console.log(
-          `✅ Generated API instance: ${output.replace(process.cwd(), ".")}`
+          `✅ Generated API instance: ${outputPath.replace(process.cwd(), ".")}`
         );
       } else {
-        // API 클래스 파일 생성 (예: User -> user/api/index.ts)
-        const output = outputPaths.api.absolutePath.replace(
+        outputPath = outputPaths.api.absolutePath.replace(
           "{moduleName}",
           moduleName
         );
-        await writeFileToPath(output, fileContent);
+        await writeFileToPath(outputPath, fileContent);
+        formatWithProjectPrettier(outputPath);
         console.log(
-          `✅ Generated API class: ${output.replace(process.cwd(), ".")}`
+          `✅ Generated API class: ${outputPath.replace(process.cwd(), ".")}`
         );
       }
     }
@@ -247,9 +333,8 @@ const generateApiFunctionCode = async (args, outputPaths) => {
  * @param {Object} outputPaths - 출력 경로 설정
  */
 const generateTanstackQueryCode = async (args, outputPaths) => {
-  const { projectTemplate, uri, username, password } = args;
+  const { projectTemplate, uri, username, password, httpClient } = args;
 
-  // TanStack Query 템플릿 경로 결정
   const templatePath = projectTemplate
     ? path.resolve(process.cwd(), projectTemplate, "tanstack-query")
     : path.resolve(__dirname, "../templates/tanstack-query");
@@ -260,35 +345,37 @@ const generateTanstackQueryCode = async (args, outputPaths) => {
     uri,
     username,
     password,
+    httpClient,
     templates: templatePath,
+    // swagger-typescript-api + prettier 조합에서 parser 추론 실패를 방지
+    prettier: { parser: "typescript" },
   });
 
-  // 생성된 파일들을 적절한 위치에 저장
   for (const { fileName, fileContent } of tanstackQueryCode.files) {
-    // 불필요한 파일들 제외
     if (fileName === "http-client" || fileName === "data-contracts") continue;
 
     const moduleName = fileName.replace("Route", "").toLowerCase();
+    let outputPath;
 
     if (fileName.match(/Route$/)) {
-      // Mutation 훅 파일 생성
-      const output = outputPaths.mutation.absolutePath.replace(
+      outputPath = outputPaths.mutation.absolutePath.replace(
         "{moduleName}",
         moduleName
       );
-      await writeFileToPath(output, fileContent);
+      await writeFileToPath(outputPath, fileContent);
+      formatWithProjectPrettier(outputPath);
       console.log(
-        `✅ Generated mutations: ${output.replace(process.cwd(), ".")}`
+        `✅ Generated mutations: ${outputPath.replace(process.cwd(), ".")}`
       );
     } else {
-      // Query 훅 파일 생성
-      const output = outputPaths.query.absolutePath.replace(
+      outputPath = outputPaths.query.absolutePath.replace(
         "{moduleName}",
         moduleName
       );
-      await writeFileToPath(output, fileContent);
+      await writeFileToPath(outputPath, fileContent);
+      formatWithProjectPrettier(outputPath);
       console.log(
-        `✅ Generated queries: ${output.replace(process.cwd(), ".")}`
+        `✅ Generated queries: ${outputPath.replace(process.cwd(), ".")}`
       );
     }
   }
@@ -310,6 +397,9 @@ const main = async () => {
   }
 
   try {
+    args.httpClient = resolveHttpClient(args.httpClient);
+    console.log(`🌐 HTTP client mode: ${args.httpClient}`);
+
     // 1. API 클래스와 DTO 생성
     await generateApiFunctionCode(args, outputPaths);
 

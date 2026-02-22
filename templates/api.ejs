@@ -2,13 +2,14 @@
 /**
  * API 클래스 생성 템플릿
  * - Swagger 태그별로 API 클래스 생성
- * - ky HTTP 클라이언트 기반
+ * - axios/ky HTTP 클라이언트 기반
  * - 타입 안전성을 위한 TypeScript 지원
  * - 쿼리 파라미터 처리를 위한 유틸리티 메서드 포함
  */
 
 const { utils, route, config, modelTypes } = it;
 const { _, pascalCase, require } = utils;
+const isAxios = config.httpClientType === 'axios';
 
 // 모듈명을 PascalCase로 변환하여 클래스명 생성 (예: user -> UserApi)
 const apiClassName = pascalCase(route.moduleName);
@@ -20,27 +21,32 @@ const routes = route.routes;
 const dataContracts = _.map(modelTypes, "name");
 %>
 
-import { KyInstance, Options } from 'ky';
+<% if (isAxios) { %>
+import type { AxiosInstance, AxiosRequestConfig } from 'axios';
+<% } else { %>
+import type { KyInstance, Options } from 'ky';
+<% } %>
 
 <%~ includeFile('./dto-import.ejs', { ...it }) %>
 
 /**
  * <%= route.moduleName %> 모듈 API 클래스
- * - ky HTTP 클라이언트를 사용한 API 호출
+ * - 선택된 HTTP 클라이언트를 사용한 API 호출
  * - 타입 안전성을 위한 TypeScript 지원
  * - 쿼리 파라미터 자동 변환 기능
  */
 export class <%= apiClassName %>Api {
-private readonly instance: KyInstance;
+private readonly instance: <%= isAxios ? 'AxiosInstance' : 'KyInstance' %>;
 
 /**
  * API 클래스 생성자
- * @param instance - ky HTTP 클라이언트 인스턴스
+ * @param instance - HTTP 클라이언트 인스턴스
  */
-constructor(instance: KyInstance) {
+constructor(instance: <%= isAxios ? 'AxiosInstance' : 'KyInstance' %>) {
 this.instance = instance;
 }
 
+<% if (!isAxios) { %>
 /**
  * 객체를 URLSearchParams로 변환하는 정적 유틸리티 메서드
  * - 중첩된 객체나 배열을 쿼리 파라미터로 변환
@@ -70,6 +76,7 @@ static createSearchParams(
 
   return urlSearchParams;
 }
+<% } %>
 
 <% for (const route of routes) { %>
 <%~ includeFile('./procedure-call.ejs', { ...it, route, apiClassName }) %>

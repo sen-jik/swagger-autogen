@@ -10,6 +10,7 @@
 const { utils, route, config, apiClassName } = it;
 const { _, pascalCase } = utils;
 const routeDocs = includeFile("./route-docs", { config, route, utils });
+const isAxios = config.httpClientType === 'axios';
 
 /**
  * API 메서드명 생성
@@ -42,6 +43,7 @@ const headerName = headers ? `${pascalCase(route.routeName.usage)}Headers` : nul
 
 // 쿼리 파라미터 타입명 생성
 const queryTypeName = query ? `${pascalCase(route.routeName.usage)}QueryParams` : null;
+const instanceParamName = isAxios ? 'axiosInstance' : 'kyInstance';
 
 /**
  * 메서드 파라미터 문자열 생성
@@ -61,20 +63,21 @@ const generateParams = (params, query, payload, headerName) => {
         ...(payload ? [`data${payload.optional ? '?' : ''}: ${payload.type}`] : [])
     ];
 
-    // ky Options에서 제외할 타입들 (중복 방지)
+    // HTTP client options에서 제외할 타입들 (중복 방지)
     const omitTypes = [
-        ...(query ? ["'searchParams'"] : []),
-        ...(payload ? ["'json'"] : []),
+        ...(query ? [isAxios ? "'params'" : "'searchParams'"] : []),
+        ...(payload ? [isAxios ? "'data'" : "'json'"] : []),
         ...(headerName ? ["'headers'"] : [])
     ];
 
-    // ky Options 타입 생성 (중복되는 속성 제외)
+    // HTTP client options 타입 생성 (중복되는 속성 제외)
+    const optionsBaseType = isAxios ? 'AxiosRequestConfig' : 'Options';
     const optionsType = omitTypes.length > 0
-            ? `Omit<Options, ${omitTypes.join(' | ')}>${headerName ? ` & { headers: ${headerName} }` : ''}`
-            : 'Options';
+            ? `Omit<${optionsBaseType}, ${omitTypes.join(' | ')}>${headerName ? ` & { headers: ${headerName} }` : ''}`
+            : optionsBaseType;
 
-    // ky 인스턴스와 옵션 파라미터 추가
-    paramList.push('kyInstance?: KyInstance', `options?: ${optionsType}`);
+    // HTTP 클라이언트 인스턴스와 옵션 파라미터 추가
+    paramList.push(`${instanceParamName}?: ${isAxios ? 'AxiosInstance' : 'KyInstance'}`, `options?: ${optionsType}`);
     return paramList.join(', ');
 };
 %>
@@ -82,14 +85,25 @@ const generateParams = (params, query, payload, headerName) => {
 /**
 <%~ routeDocs.lines %> */
 <%= functionName %>(<%~ generateParams(pathParams, query, payload, headerName) %>) {
-// ky 인스턴스 선택 (전달된 인스턴스 또는 기본 인스턴스)
-const instance = kyInstance ?? this.instance;
+// HTTP 클라이언트 인스턴스 선택 (전달된 인스턴스 또는 기본 인스턴스)
+const instance = <%= instanceParamName %> ?? this.instance;
 
-<% if (query) { %>
+<% if (query && !isAxios) { %>
     // 쿼리 파라미터를 URLSearchParams로 변환
     const urlSearchParams = <%= apiClassName %>Api.createSearchParams(params);
 <% } %>
 
+<% if (isAxios) { %>
+return instance.<%= route.request.method.toLowerCase() %><<%= responseType %>>(`<%= route.request.path.replace(/{/g, '{').replace(/}/g, '}').slice(1,) %>`, {
+<% if (query) { %>
+    params, // 쿼리 파라미터 설정
+<% } %>
+<% if (payload) { %>
+    data, // 요청 본문 설정
+<% } %>
+    ...options, // 추가 axios 옵션 병합
+}).then((response) => response.data);
+<% } else { %>
 // HTTP 요청 실행 및 JSON 응답 반환
 return instance.<%= route.request.method.toLowerCase() %><<%= responseType %>>(`<%= route.request.path.replace(/{/g, '{').replace(/}/g, '}').slice(1,) %>`,{
 <% if (query) { %>
@@ -100,4 +114,5 @@ return instance.<%= route.request.method.toLowerCase() %><<%= responseType %>>(`
 <% } %>
 ...options, // 추가 ky 옵션 병합
 }).json();
+<% } %>
 }
